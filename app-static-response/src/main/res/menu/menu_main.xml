@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_add"
+        android:title="@string/menu_add"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_canceled"
+        android:title="@string/menu_canceled"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_refunded"
+        android:title="@string/menu_refunded"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_unavailabled"
+        android:title="@string/menu_unavailable"
+        app:showAsAction="never" />
+
+</menu>

@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">lib-res</string>
+
+    <string name="snackbar_purchase_failed">Failed to purchase.</string>
+    <string name="snackbar_consume_failed">Failed to consume.</string>
+    <string name="snackbar_not_supported_subscription">Your device is not supported for subscription.</string>
+    <string name="snackbar_already_owned">Already owned. Consume the item to purchase.</string>
+    <string name="snackbar_consumed">Consumed.</string>
+    <string name="snackbar_query_failed">Failed to fetch inventories items.</string>
+    <string name="snackbar_no_items">No items.</string>
+
+    <string name="menu_add">Add</string>
+    <string name="menu_canceled">canceled</string>
+    <string name="menu_refunded">refused</string>
+    <string name="menu_unavailable">unavailabled</string>
+    <string name="snackbar_no_item">No item.</string>
+</resources>
