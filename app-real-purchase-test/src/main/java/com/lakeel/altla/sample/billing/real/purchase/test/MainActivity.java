@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.lakeel.altla.android.log.Log;
@@ -51,7 +52,7 @@ public final class MainActivity extends AppCompatActivity {
 
     private IabHelper helper;
 
-    private SkuAdapter skuAdapter;
+    private Adapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,17 +61,20 @@ public final class MainActivity extends AppCompatActivity {
 
         ButterKnife.bind(MainActivity.this);
 
-        skuAdapter = new SkuAdapter();
+        setTitle(getString(R.string.title_items));
 
+        adapter = new Adapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         recyclerView.setHasFixedSize(true);
-        recyclerView.setAdapter(skuAdapter);
+        recyclerView.setAdapter(adapter);
+
+        String base64EncodedPublicKey = getString(R.string.google_play_license_key);
 
         // Google highly recommends that you do not hard-code the exact public license key string value as provided by Google Play.
         // Instead, construct the whole public license key string at runtime from substrings or retrieve it from an encrypted store before passing it to the constructor.
         // This approach makes it more difficult for malicious third parties to modify the public license key string in your APK file.
         // See https://developer.android.com/training/in-app-billing/preparing-iab-app.html#Connect
-        helper = new IabHelper(this, getString(R.string.google_play_license_key));
+        helper = new IabHelper(this, base64EncodedPublicKey);
 
         // Bind the InAppBillingService that connects to Google Play using the helper class.
         helper.startSetup(result -> {
@@ -80,7 +84,9 @@ public final class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            fetchInventoriesItems();
+            LOG.i("Connected to Google Play App.");
+
+            fetchItems();
         });
     }
 
@@ -103,7 +109,7 @@ public final class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
 
-        LOG.d("Unbind the service to prevent decreasing of the application performance.");
+        LOG.i("Unbind the service to prevent decreasing of the application performance.");
 
         if (helper != null) {
             helper.disposeWhenFinished();
@@ -111,7 +117,7 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void fetchInventoriesItems() {
+    private void fetchItems() {
         try {
             helper.queryInventoryAsync(true,
                     Arrays.asList(getString(R.string.item_id_1), getString(R.string.item_id_2)),
@@ -123,11 +129,13 @@ public final class MainActivity extends AppCompatActivity {
                             return;
                         }
 
-                        List<SkuDetails> items = inventory.getAllSkuDetails();
-                        if (items.isEmpty()) LOG.i("No items for purchasing.");
+                        LOG.i("Query succeeded.");
 
-                        skuAdapter.setItems(items);
-                        skuAdapter.notifyDataSetChanged();
+                        List<SkuDetails> skuDetails = inventory.getAllSkuDetails();
+                        if (skuDetails.isEmpty()) LOG.i("No items for purchasing.");
+
+                        adapter.setItems(skuDetails);
+                        adapter.notifyDataSetChanged();
                     });
         } catch (IabHelper.IabAsyncInProgressException e) {
             LOG.e("Error querying inventory. Another async operation in progress.", e);
@@ -177,6 +185,34 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
+    private final IabHelper.OnIabPurchaseFinishedListener onIabPurchaseFinishedListener = (result, purchase) -> {
+        if (result.isFailure()) {
+            LOG.e("Error purchasing: " + result);
+
+            BillingResponseCode code = BillingResponseCode.toStatus(result.getResponse());
+            if (BillingResponseCode.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED == code) {
+                showSnackBar(R.string.snackbar_already_owned);
+
+                Snackbar
+                        .make(container, R.string.snackbar_already_owned, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.snackbar_action_consume, v -> consumeItem(purchase))
+                        .show();
+            } else {
+                showSnackBar(R.string.snackbar_purchase_failed);
+            }
+            return;
+        }
+
+        // NOTE: It's highly recommended to validate purchase details on a server that you trust.
+        // See https://developer.android.com/google/play/billing/billing_best_practices.html#validating-purchase-server
+
+        // Check the returned data signature and the orderId, and verify that the orderId is a unique value that you have not previously processed.
+        String orderId = purchase.getOrderId();
+
+        // Verify that your app's key has signed the signature (INAPP_PURCHASE_DATA) that you process.
+        String signature = purchase.getSignature();
+    };
+
     private void consumeItem(@NonNull Purchase purchased) {
         try {
             // Once you purchase the item, can not purchase it again until consume it.
@@ -203,32 +239,7 @@ public final class MainActivity extends AppCompatActivity {
         Snackbar.make(container, getString(resId), Snackbar.LENGTH_SHORT).show();
     }
 
-    private final IabHelper.OnIabPurchaseFinishedListener onIabPurchaseFinishedListener = (result, purchase) -> {
-        if (result.isFailure()) {
-            LOG.e("Error purchasing: " + result);
-
-            BillingResponseCode code = BillingResponseCode.toStatus(result.getResponse());
-            if (BillingResponseCode.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED == code) {
-                showSnackBar(R.string.snackbar_already_owned);
-            } else {
-                showSnackBar(R.string.snackbar_purchase_failed);
-            }
-            return;
-        }
-
-        // NOTE: It's highly recommended to validate purchase details on a server that you trust.
-        // See https://developer.android.com/google/play/billing/billing_best_practices.html#validating-purchase-server
-
-        // Check the returned data signature and the orderId, and verify that the orderId is a unique value that you have not previously processed.
-        String orderId = purchase.getOrderId();
-
-        // Verify that your app's key has signed the signature (INAPP_PURCHASE_DATA) that you process.
-        String signature = purchase.getSignature();
-
-        fetchInventoriesItems();
-    };
-
-    final class SkuAdapter extends RecyclerView.Adapter<SkuAdapter.ViewHolder> {
+    final class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
 
         private List<SkuDetails> items = new ArrayList<>();
 
@@ -249,14 +260,14 @@ public final class MainActivity extends AppCompatActivity {
         }
 
         void setItems(List<SkuDetails> items) {
-            items.clear();
+            this.items.clear();
             this.items.addAll(items);
         }
 
         final class ViewHolder extends RecyclerView.ViewHolder {
 
-            @BindView(R.id.container)
-            View container;
+            @BindView(R.id.layoutSwipe)
+            View layoutSwipe;
 
             @BindView(R.id.textViewTitle)
             TextView textViewTitle;
@@ -267,9 +278,11 @@ public final class MainActivity extends AppCompatActivity {
             @BindView(R.id.textViewPrice)
             TextView textViewPrice;
 
+            @BindView(R.id.buttonPurchase)
+            Button buttonPurchase;
+
             ViewHolder(View itemView) {
                 super(itemView);
-
                 ButterKnife.bind(this, itemView);
             }
 
@@ -280,7 +293,7 @@ public final class MainActivity extends AppCompatActivity {
                 textViewDescription.setText(skuDetails.getDescription());
                 textViewPrice.setText(skuDetails.getPrice());
 
-                container.setOnClickListener(v -> {
+                buttonPurchase.setOnClickListener(v -> {
                     String type = skuDetails.getType();
                     if (IabHelper.ITEM_TYPE_INAPP.equals(type)) {
                         purchaseItem(skuDetails.getSku());
@@ -288,6 +301,8 @@ public final class MainActivity extends AppCompatActivity {
                         purchaseSubscription(skuDetails.getSku());
                     }
                 });
+
+                layoutSwipe.setOnClickListener(v -> startActivity(DebugActivity.newIntent(MainActivity.this, skuDetails.getJson())));
             }
         }
     }

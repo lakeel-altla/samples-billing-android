@@ -9,9 +9,15 @@
     <string name="snackbar_query_failed">Failed to fetch inventories items.</string>
     <string name="snackbar_no_items">No items.</string>
 
+    <string name="snackbar_action_consume">Consume</string>
+
     <string name="menu_add">Add</string>
     <string name="menu_canceled">canceled</string>
     <string name="menu_refunded">refused</string>
     <string name="menu_unavailable">unavailabled</string>
+
     <string name="snackbar_no_item">No item.</string>
+
+    <string name="button_consume">Consume</string>
+    <string name="dummy">dummy</string>
 </resources>

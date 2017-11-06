@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Real Purchase Test</string>
+    <string name="title_items">Items</string>
+    <string name="title_response">Response</string>
 </resources>

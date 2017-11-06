@@ -20,4 +20,6 @@ android {
 }
 
 dependencies {
+    compile "com.android.support.constraint:constraint-layout:$supportConstraintVersion"
+    compile "com.marshalchen.ultimaterecyclerview:library:$ultimaterecyclerviewVersion"
 }

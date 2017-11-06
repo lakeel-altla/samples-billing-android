@@ -81,6 +81,10 @@ public class SkuDetails {
         return mDescription;
     }
 
+    public String getJson() {
+        return mJson;
+    }
+
     @Override
     public String toString() {
         return "SkuDetails:" + mJson;
