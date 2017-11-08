@@ -18,6 +18,6 @@
 
     <string name="snackbar_no_item">No item.</string>
 
-    <string name="button_consume">Consume</string>
+    <string name="button_purchase">Purchase</string>
     <string name="dummy">dummy</string>
 </resources>

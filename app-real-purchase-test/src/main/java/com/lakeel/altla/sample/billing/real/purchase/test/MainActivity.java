@@ -29,6 +29,8 @@ import java.util.UUID;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static com.lakeel.altla.sample.billing.lib.purchasing.helper.IabHelper.ITEM_TYPE_INAPP;
+
 /**
  * This sample app is for real purchases.
  * Testing real in-app purchases enables you to test the end-to-end In-app Billing experience,
@@ -120,7 +122,7 @@ public final class MainActivity extends AppCompatActivity {
     private void fetchItems() {
         try {
             helper.queryInventoryAsync(true,
-                    Arrays.asList(getString(R.string.item_id_1), getString(R.string.item_id_2)),
+                    Arrays.asList(getString(R.string.item_id_1), getString(R.string.item_id_2), getString(R.string.item_id_3)),
                     Arrays.asList(getString(R.string.subscription_id_1), getString(R.string.subscription_id_2)),
                     (result, inventory) -> {
                         if (result.isFailure()) {
@@ -189,14 +191,13 @@ public final class MainActivity extends AppCompatActivity {
         if (result.isFailure()) {
             LOG.e("Error purchasing: " + result);
 
+            if (purchase != null) {
+                LOG.i(purchase.toString());
+            }
+
             BillingResponseCode code = BillingResponseCode.toStatus(result.getResponse());
             if (BillingResponseCode.BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED == code) {
                 showSnackBar(R.string.snackbar_already_owned);
-
-                Snackbar
-                        .make(container, R.string.snackbar_already_owned, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.snackbar_action_consume, v -> consumeItem(purchase))
-                        .show();
             } else {
                 showSnackBar(R.string.snackbar_purchase_failed);
             }
@@ -211,6 +212,11 @@ public final class MainActivity extends AppCompatActivity {
 
         // Verify that your app's key has signed the signature (INAPP_PURCHASE_DATA) that you process.
         String signature = purchase.getSignature();
+
+        // Consume item if it is managed.
+        if (purchase.getItemType().equals(ITEM_TYPE_INAPP)) {
+            consumeItem(purchase);
+        }
     };
 
     private void consumeItem(@NonNull Purchase purchased) {
@@ -295,14 +301,17 @@ public final class MainActivity extends AppCompatActivity {
 
                 buttonPurchase.setOnClickListener(v -> {
                     String type = skuDetails.getType();
-                    if (IabHelper.ITEM_TYPE_INAPP.equals(type)) {
+                    if (ITEM_TYPE_INAPP.equals(type)) {
                         purchaseItem(skuDetails.getSku());
                     } else if (IabHelper.ITEM_TYPE_SUBS.equals(type)) {
                         purchaseSubscription(skuDetails.getSku());
                     }
                 });
 
-                layoutSwipe.setOnClickListener(v -> startActivity(DebugActivity.newIntent(MainActivity.this, skuDetails.getJson())));
+                layoutSwipe.setOnLongClickListener(v -> {
+                    startActivity(DebugActivity.newIntent(MainActivity.this, skuDetails.getJson()));
+                    return false;
+                });
             }
         }
     }
